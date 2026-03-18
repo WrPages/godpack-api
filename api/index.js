@@ -17,15 +17,18 @@ export default async function handler(req, res) {
       Accept: "application/vnd.github+json",
     }
 
-    // 🔹 Obtener archivo
+    // 🔹 GET archivo
     const fileRes = await fetch(`https://api.github.com/repos/${REPO}/contents/${FILE_PATH}`, {
       headers,
     })
 
     const fileText = await fileRes.text()
 
+    // 👉 DEBUG
+    console.log("GET RESPONSE:", fileText)
+
     if (!fileRes.ok) {
-      return res.status(500).send("Error GitHub GET: " + fileText)
+      return res.status(500).send("GET ERROR:\n" + fileText)
     }
 
     const file = JSON.parse(fileText)
@@ -38,7 +41,6 @@ export default async function handler(req, res) {
 
     let ids = decoded.split("\n").filter(x => x.trim() !== "")
 
-    // 🔹 Lógica
     if (action === "online") {
       if (!ids.includes(id)) ids.push(id)
     }
@@ -49,7 +51,7 @@ export default async function handler(req, res) {
 
     const newContent = ids.join("\n")
 
-    // 🔹 Subir cambios
+    // 🔹 PUT archivo
     const updateRes = await fetch(`https://api.github.com/repos/${REPO}/contents/${FILE_PATH}`, {
       method: "PUT",
       headers,
@@ -62,13 +64,15 @@ export default async function handler(req, res) {
 
     const updateText = await updateRes.text()
 
+    console.log("PUT RESPONSE:", updateText)
+
     if (!updateRes.ok) {
-      return res.status(500).send("Error GitHub PUT: " + updateText)
+      return res.status(500).send("PUT ERROR:\n" + updateText)
     }
 
     return res.status(200).send("OK")
 
   } catch (err) {
-    return res.status(500).send("ERROR: " + err.message)
+    return res.status(500).send("ERROR:\n" + err.message)
   }
 }
