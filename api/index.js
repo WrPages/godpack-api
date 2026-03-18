@@ -1,45 +1,18 @@
 export default async function handler(req, res) {
   try {
-    const action = req.query.action
-    const id = req.query.id
+    const { action, id } = req.query
 
-    if (!id) {
-      return res.status(400).send("Falta ID")
-    }
-
-    const GITHUB_TOKEN = "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
+    const GIST_ID = "1fc02ff0921e82b3af1d3101cee44e4c"
+    const TOKEN = "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
 "
-    const REPO = "WrPages/gp_ids"
-    const FILE_PATH = "ids.txt"
 
-    const headers = {
-      Authorization: `Bearer ${GITHUB_TOKEN}`,
-      Accept: "application/vnd.github+json",
-    }
+    // 🔹 obtener contenido actual
+    const gistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`)
+    const gist = await gistRes.json()
 
-    // 🔹 GET archivo
-    const fileRes = await fetch(`https://api.github.com/repos/${REPO}/contents/${FILE_PATH}`, {
-      headers,
-    })
+    let content = gist.files["ids.txt"].content
 
-    const fileText = await fileRes.text()
-
-    // 👉 DEBUG
-    console.log("GET RESPONSE:", fileText)
-
-    if (!fileRes.ok) {
-      return res.status(500).send("GET ERROR:\n" + fileText)
-    }
-
-    const file = JSON.parse(fileText)
-
-    if (!file.content) {
-      return res.status(500).send("Archivo sin contenido")
-    }
-
-    const decoded = Buffer.from(file.content, "base64").toString("utf-8")
-
-    let ids = decoded.split("\n").filter(x => x.trim() !== "")
+    let ids = content.split("\n").filter(x => x.trim() !== "")
 
     if (action === "online") {
       if (!ids.includes(id)) ids.push(id)
@@ -51,28 +24,25 @@ export default async function handler(req, res) {
 
     const newContent = ids.join("\n")
 
-    // 🔹 PUT archivo
-    const updateRes = await fetch(`https://api.github.com/repos/${REPO}/contents/${FILE_PATH}`, {
-      method: "PUT",
-      headers,
+    // 🔹 actualizar gist
+    await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${TOKEN}`,
+        Accept: "application/vnd.github+json"
+      },
       body: JSON.stringify({
-        message: "update ids",
-        content: Buffer.from(newContent).toString("base64"),
-        sha: file.sha,
-      }),
+        files: {
+          "ids.txt": {
+            content: newContent
+          }
+        }
+      })
     })
 
-    const updateText = await updateRes.text()
-
-    console.log("PUT RESPONSE:", updateText)
-
-    if (!updateRes.ok) {
-      return res.status(500).send("PUT ERROR:\n" + updateText)
-    }
-
-    return res.status(200).send("OK")
+    res.send("OK")
 
   } catch (err) {
-    return res.status(500).send("ERROR:\n" + err.message)
+    res.send("ERROR: " + err.message)
   }
 }
