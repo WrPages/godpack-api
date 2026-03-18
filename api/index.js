@@ -7,7 +7,8 @@ export default async function handler(req, res) {
       return res.status(400).send("Falta ID")
     }
 
-    const GITHUB_TOKEN = "TU_TOKEN"
+    const GITHUB_TOKEN = "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
+"
     const REPO = "WrPages/gp_ids"
     const FILE_PATH = "ids.txt"
 
